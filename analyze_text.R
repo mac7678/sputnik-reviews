@@ -58,6 +58,7 @@ fix_ratings <- function(x){
 }
 review_wordcloud <- function(dat, filename)
 {
+  filename <- gsub("%3F",'',filename)
   # from https://www.r-bloggers.com/word-cloud-in-r/ and
   # https://stackoverflow.com/questions/8399100/r-plot-size-and-resolution
   png(
@@ -143,7 +144,7 @@ dat <- ratings %>%
             mean_rev_score = mean(as.numeric(score)),
             max_replies_album = paste(band[which.max(replies)],album[which.max(replies)], sep = "_"),
             max_views_album = paste(band[which.max(views)],album[which.max(views)], sep = "_")) %>%
-  mutate(max_replies_rank = min_rank(desc(median_replies)), median_views_rank = min_rank(desc(max_views)))
+  mutate(median_replies_rank = min_rank(desc(median_replies)), median_views_rank = min_rank(desc(median_views)))
 rm(ratings)
 tmp <- list()
 for(i in unique(ratings_dat$user)){
@@ -174,17 +175,17 @@ revs <- revs %>%
 
 if(!dir.exists('./wordclouds/')) dir.create('./wordclouds/')
 staff <- unique(revs$user)
-staff <- gsub("%3F",'',staff)
+# staff <- gsub("%3F",'',staff)
 filenames <- paste0('./wordclouds/', staff,'.png')
 walk2(staff, filenames, ~ review_wordcloud(dat = revs %>% filter(user == .x),.y))
 
-tocopy <- with(dat,sprintf(paste0('User: <strong>%s</strong>, # Reviews: %i',
-                         "\nMean Review Rating: %.02f, Average Rating of Album: %.02f",
+tocopy <- with(dat,sprintf(paste0('User: <strong>%s</strong>, # of Reviews: %i',
+                         "\nMean Review Rating by Reviewer: %.02f, Mean Rating of Album: %.02f",
                          "\nMedian Views of Reviews: %.00f (Rank: %i), Median Replies of Reviews: %.00f (Rank: %i)",
                          "\nMaximum Views: %i (Album: %s), \nMaximum Replies: %i (Album: %s)"),
                   staff,as.integer(count_reviews),
                   mean_rev_score,mean_rating,
-                  median_views, max_views_rank, median_replies,max_replies_rank,
+                  median_views, median_views_rank, median_replies,median_replies_rank,
                   max_views, max_views_album, 
                   max_replies,  max_replies_album))
                   
