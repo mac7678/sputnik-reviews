@@ -182,12 +182,13 @@ walk2(staff, filenames, ~ review_wordcloud(dat = revs %>% filter(user == .x),.y)
 tocopy <- with(dat,sprintf(paste0('User: <strong>%s</strong>, # of Reviews: %i',
                          "\nMean Review Rating by Reviewer: %.02f, Mean Rating of Album: %.02f",
                          "\nMedian Views of Reviews: %.00f (Rank: %i), Median Replies of Reviews: %.00f (Rank: %i)",
-                         "\nMaximum Views: %i (Album: %s), \nMaximum Replies: %i (Album: %s)"),
+                         '<a href="http://www.sputnikmusic.com/blog/wp-content/uploads/%s.png"><img  src="http://www.sputnikmusic.com/blog/wp-content/uploads/%s.png" alt="%s" width="600" height="600" /></a>"'),
                   staff,as.integer(count_reviews),
                   mean_rev_score,mean_rating,
                   median_views, median_views_rank, median_replies,median_replies_rank,
                   max_views, max_views_album, 
-                  max_replies,  max_replies_album))
+                  max_replies,  max_replies_album,
+                  staff,staff,staff))
                   
 
 walk(tocopy,writeLines_wspace)
