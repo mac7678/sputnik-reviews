@@ -367,5 +367,36 @@ ggplot(tail(xM_tbl, 20),
   ggtitle("Album Threads with LEAST m/'s over Expected") +
   ggsave('./m_slash/ms_over_expected_least.jpg', height = 8, width = 12)
 
+# contest winner
 
-
+contestants <- contestants %>% unnest()
+contest <- list()
+for(i in seq_along(contestants$albums)){
+  tryCatch(tmp <- scrape_comments(contestants$albums[i]))
+  contest[[i]] <- tmp
+  tmp <- tibble()
+  writeLines(paste0(contestants$albums[i], ' COMPLETED'))
+}
+contest_tbl <- bind_rows(contest)
+contest_tbl <- contest_tbl %>%
+  mutate(comment = comment %>%
+           str_replace_all('(f|ht)tp\\S+\\s*|www\\S+\\s*', ' '),
+         x=str_count(comment, m_regex),
+         album = str_split(sput_url, '/', simplify = T) %>% .[, 6]) %>%
+  select(album, everything(), -sput_url) %>% 
+  group_by(album) %>%
+  summarise(total_m = sum(x, na.rm = TRUE), 
+            m_comments = sum(x>0, na.rm = TRUE),
+            m_ratio = total_m/m_comments,
+            total_comments = n(), 
+            m_per_comment = total_m/total_comments, 
+            m_per_comment_l95 = lower95(m_per_comment, total_comments)) %>%
+  mutate(m_per_l95_rank = min_rank(desc(m_per_comment_l95))) %>%
+  arrange(m_per_l95_rank) %>%
+  left_join(contestants %>% mutate(album = str_split(albums, '/', simplify = T) %>% .[, 6]))
+knitr::kable(contest_tbl %>%
+               select(album, 
+                      m_per_comment_l95,
+                      m_per_l95_rank, user) %>%
+               mutate(m_per_comment_l95 = round(m_per_comment_l95, 3)),
+            format = 'html')
