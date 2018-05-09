@@ -1,34 +1,42 @@
 library(tidyverse)
 library(XML)
 library(rvest)
+library(RCurl)
+library(httr)
 library(tidytext)
 ### functions ----
 strsplit_last <- Vectorize(function(x, split = "/") tail(unlist(strsplit(x,split)),1))
+htmlParse_https <- function(link){
+  # Read page
+  page <- getURL(link)
+  obj <- htmlParse(page)
+}
 find_rev_tab <- function(staff_link)
 {
-  x <- grep("/user_reviews.php?",getHTMLLinks(staff_link),value=TRUE)[1]
+  x <- grep("/user_reviews.php?",getHTMLLinks(htmlParse_https(staff_link)),value=TRUE)[1]
   return(x)
 }
+
 find_reviews <- function(staff_link)
 {
-  x <- grep("/review/",getHTMLLinks(staff_link),value=TRUE)
+  x <- grep("/review/",getHTMLLinks(htmlParse_https(staff_link)),value=TRUE)
   return(x)
 }
 findSputURL_soundoffpage <- function(sputurl){ # find soundoffpage
-  links <- getHTMLLinks(sputurl)
+  links <- getHTMLLinks(htmlParse_https(sputurl))
   if(!is.na(links[grep('/soundoff',links)[1]])){
     links <- links[grep('/soundoff',links)[1]]
-    links <- paste0('http://www.sputnikmusic.com',links)
+    links <- paste0('https://www.sputnikmusic.com',links)
   }else{
     links <- sputurl
   }
   return(links)
 }
 findSputURL_band <- function(sputurl){ # find band page
-  links <- getHTMLLinks(sputurl)
+  links <- getHTMLLinks(htmlParse_https(sputurl))
   if(!is.na(links[grep('bands/',links)[1]])){
     links <- links[grep('bands/',links)[1]]
-    links <- paste0('http://www.sputnikmusic.com/',links)
+    links <- paste0('https://www.sputnikmusic.com/',links)
   }else{
     links <- sputurl
   }
@@ -61,7 +69,7 @@ scrape_soundoff <- function(obj,link,alldat=list(),getuser_metrics = TRUE){ # fu
                             "XMLInternalDocument",  "XMLAbstractDocument")) && is.character(obj)){
     link <- obj
     if(!grepl('/soundoff.php',obj)) stop('Character string provided is not a soundoff page')
-    obj <- htmlParse(obj)
+    obj <- htmlParse_https(obj)
   }
   if(!any(class(obj) %in% c("HTMLInternalDocument", "HTMLInternalDocument",
                             "XMLInternalDocument",  "XMLAbstractDocument")) && !is.character(obj)) {
@@ -79,7 +87,7 @@ scrape_soundoff <- function(obj,link,alldat=list(),getuser_metrics = TRUE){ # fu
     release.year <- as.numeric(tail(unlist(strsplit(unlist(lapply(xpathSApply(obj, "//b"),xmlToList)[[2]]),'/')),1))
   }
   dat<-readHTMLTable(obj,which = 1)
-  if(any(grepl('http:/',user_links))) user_links <- user_links[-grep('http:/',user_links)]
+  if(any(grepl('https:/',user_links))) user_links <- user_links[-grep('https:/',user_links)]
   dat$V2 <- as.character(dat$V2)
   names(dat)[1] <- 'Rating'
   dat <- dat[!is.na(dat$V2),]
@@ -135,7 +143,7 @@ scrape_soundoff <- function(obj,link,alldat=list(),getuser_metrics = TRUE){ # fu
 
 scrape_review <- function(rev_link, session)
 {
-  rev <- session %>% jump_to(rev_link)
+  rev <- session %>% jump_to(rev_link, encoding = 'UTF-8')
   text <- rev %>% html_node('#leftColumn') %>% html_text()
   album <- rev %>% html_node('span') %>% html_text()
   badbands <- "/bands//29826/"
@@ -177,14 +185,14 @@ scrape_review <- function(rev_link, session)
   return(x)
 }
 
-sput <- "http://www.sputnikmusic.com"
-if(!dir.exists('./data/')) dir.create('./data/') # make folder for data
+sput <- "https://www.sputnikmusic.com"
+if(!dir.exists('./statnik5_wordclouds/data/')) dir.create('./statnik5_wordclouds/data/') # make folder for data
 users <- c("acadhdemy")
 do_staff <- TRUE # set to true if you want scrape all staff
 if(do_staff)
 {
   staff_links <- paste0(sput, "/", "staff.php")
-  staff_links <- getHTMLLinks(staff_links)
+  staff_links <- getHTMLLinks(htmlParse_https(staff_links))
   staff_links <- paste0(sput,
                         grep("/user/", staff_links, value = TRUE)
   )
@@ -194,7 +202,7 @@ if(do_staff)
 }
 staff_meta <- tibble(users = strsplit_last(staff_links), staff_links = staff_links)
 all_revs <- list()
-session <- html_session("http://www.sputnikmusic.com/login.php") 
+session <- html_session("https://www.sputnikmusic.com/login.php") 
 # from: https://stackoverflow.com/questions/35108711/r-using-rvest-to-scrape-a-password-protected-website-without-logging-in-at-eac
 form <- html_form(session)[[2]]
 filled <- form %>% set_values(`uname` = as.character(readline("Username?")), 
@@ -210,7 +218,7 @@ for(i in seq_along(staff_links))
   revs <- revs %>% 
     mutate(user = staff_meta$users[i]) %>% as_tibble() %>%
     '['(, c(11,1:10))
-  saveRDS(revs, paste0('./data/',staff_meta$users[i],'.rds'))
+  saveRDS(revs, paste0('./statnik5_wordclouds/data/',staff_meta$users[i],'.rds'))
   writeLines(paste0("Completed ", staff_meta$users[i]))
   # all_revs[[staff_meta$users[i]]] <- revs
 }

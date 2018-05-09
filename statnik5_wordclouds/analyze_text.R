@@ -115,7 +115,7 @@ babynames <- babynames %>%
 stop_words <- bind_rows(stop_words, last_names, babynames)
 ## Script ----
 
-fils <- dir('./data/','.', full.names = TRUE)
+fils <- dir('./statnik5_wordclouds/data/','.', full.names = TRUE)
 
 ratings_dat <- map_df(fils, read_rds)
 ratings <- vector('list',nrow(ratings_dat))
@@ -173,10 +173,10 @@ revs <- revs %>%
   left_join(dat, by = c(user='staff')) %>%
   ungroup()
 
-if(!dir.exists('./wordclouds/')) dir.create('./wordclouds/')
+if(!dir.exists('./statnik5_wordclouds/wordclouds/')) dir.create('./statnik5_wordclouds/wordclouds/')
 staff <- unique(revs$user)
 # staff <- gsub("%3F",'',staff)
-filenames <- paste0('./wordclouds/', staff,'.png')
+filenames <- paste0('./statnik5_wordclouds/wordclouds/', staff,'.png')
 walk2(staff, filenames, ~ review_wordcloud(dat = revs %>% filter(user == .x),.y))
 
 tocopy <- with(dat,sprintf(paste0('User: <strong>%s</strong>, # of Reviews: %i',

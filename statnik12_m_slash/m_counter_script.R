@@ -84,7 +84,7 @@ lower95 <- function(dat,n){
 
 ## Albums Scrape
 sput <- 'https://www.sputnikmusic.com'
-albums <- read_csv('./m_slash/metal_albums.csv') %>%
+albums <- read_csv('./statnik12_m_slash/metal_albums.csv') %>%
   mutate(albumlink = paste0(sput, albumlink))
 contestants <- tibble(user = c('evilford','Demon of the Fall', 'ScuroFantasma', 'bgillesp'),
                       albums = c(list('https://www.sputnikmusic.com/review/52006/Death-Symbolic/'),
@@ -98,7 +98,7 @@ contestants <- tibble(user = c('evilford','Demon of the Fall', 'ScuroFantasma', 
 
 dat <- vector('list', nrow(albums))
 empty <- c()
-dat_dir <- './m_slash/data/'
+dat_dir <- './statnik12_m_slash/data/'
 if(!dir.exists(dat_dir)) dir.create(dat_dir)
 
 for(i in seq_along(albums$albumlink)){
@@ -128,16 +128,16 @@ dat <- map_df(fils, read_csv)
 
 # grab all of KILL's comments 
 kill <- filter(dat, user == 'KILL') %>% 
-  .$comment #%>% 
-#str_replace_all('\\r\\n', ' ')
-write(kill, './m_slash/kill_comments.txt')
+  .$comment %>% 
+   str_replace_all('\\r\\n', '\t')
+write(kill, './statnik12_m_slash/kill_comments.txt')
 
 # sample 10,000 comments
-txt <- paste(dat$user, dat$comment, sep = ': ') #%>%
-#str_replace_all('\\r\\n', ' ')
+txt <- paste(dat$user, dat$comment, sep = ': ') %>%
+str_replace_all('\\r\\n', '\t')
 set.seed(159753)
 txt <- sample(txt, 10000)
-write(txt, './m_slash/m_slash_comments.txt')
+write(txt, './statnik12_m_slash/m_slash_comments.txt')
 rm(txt, kill)
 
 # remove comment with most m/'s from each album
@@ -180,7 +180,7 @@ ggplot(year_dat,
   xlab('year') +
   ggtitle("Sputnikmusic total m/'s and comments per month from 2003 to 2018*",
           "*Among a non-representative sample of 593 metal albums") +
-  ggsave('./m_slash/ms_across_years.jpg', height = 7, width = 10, dpi = 500)
+  ggsave('./statnik12_m_slash/ms_across_years.jpg', height = 7, width = 10, dpi = 500)
 
 # sorted album data
 album_tbl <- dat %>%
@@ -211,7 +211,7 @@ album_tbl <- dat %>%
   summarise_all(first) %>%
   rename(`Primary Genre` = Genre) %>%
   arrange(m_per_l95_rank)
-write_csv(album_tbl, './m_slash/album_data.csv')
+write_csv(album_tbl, './statnik12_m_slash/album_data.csv')
 
 ggplot(album_tbl[1:10, ],
        aes(x = fct_reorder(album, m_per_comment_l95, .desc = T), 
@@ -226,7 +226,7 @@ ggplot(album_tbl[1:10, ],
   ggtitle("Album Threads with most m/'s per comment*",
           "*From a sample of 593 album threads, all of which are the flagged review") +
   scale_fill_manual(values = c(wes_palette("BottleRocket"), wes_palette("Royal1"))) +
-  ggsave('./m_slash/ms_albums.jpg', height = 7, width = 10)
+  ggsave('./statnik12_m_slash/ms_albums.jpg', height = 7, width = 10)
 
 
 # sorted user data
@@ -256,7 +256,7 @@ ggplot(user_tbl[1:20, ],
   theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14)) +
   ggtitle("Users* with most m/'s per comment after 95% CI adjustment",
           "*with 100 or more comments") +
-  ggsave('./m_slash/ms_users.jpg', height = 6, width = 12)
+  ggsave('./statnik12_m_slash/ms_users.jpg', height = 6, width = 12)
 
 # genre data sorted
 genre_tbl <- dat %>%
@@ -278,7 +278,7 @@ genre_tbl <- dat %>%
   filter(unique_albums >= 10) %>%
   mutate(m_per_l95_rank = min_rank(desc(m_per_comment_l95))) %>% 
   arrange(m_per_l95_rank) 
-write_csv(genre_tbl, './m_slash/genre_data.csv')
+write_csv(genre_tbl, './statnik12_m_slash/genre_data.csv')
 
 ggplot(genre_tbl[1:20, ],
        aes(x = fct_reorder(Genre, m_per_comment_l95, .desc = T), 
@@ -292,7 +292,7 @@ ggplot(genre_tbl[1:20, ],
   ggtitle("Genres* with most m/'s per comment",
           paste0("*From a sample of 593 album threads, For genres with 10 or more unique albums, all comments from the flagged review \r\n",
                  "Albums can have up to 3 Genres")) +
-  ggsave('./m_slash/ms_genre.jpg', height = 8, width = 12)
+  ggsave('./statnik12_m_slash/ms_genre.jpg', height = 8, width = 12)
 
 # m/'s over expected
 xM_tbl <- dat %>%
@@ -336,7 +336,7 @@ xM_tbl <- dat %>%
   summarise_all(first) %>%
   rename(`Primary Genre` = Genre) %>%
   arrange(m_over_xM_rank)
-write_csv(xM_tbl, './m_slash/xM_data.csv')
+write_csv(xM_tbl, './statnik12_m_slash/xM_data.csv')
 
 ggplot(xM_tbl[c(1:20), ],
        aes(x = fct_reorder(album, m_over_xM, .desc = T), 
@@ -352,7 +352,7 @@ ggplot(xM_tbl[c(1:20), ],
   ggtitle("Album Threads with MOST m/'s over Expected") + 
   scale_fill_manual(values = c(wes_palette("Moonrise1"), wes_palette("Royal1"),  wes_palette("Royal2"))) +
   # facet_wrap(~Type , scale="free", nrow = 2) +
-  ggsave('./m_slash/ms_over_expected_most.jpg', height = 8, width = 12)
+  ggsave('./statnik12_m_slash/ms_over_expected_most.jpg', height = 8, width = 12)
 ggplot(tail(xM_tbl, 20),
        aes(x = fct_reorder(album, m_over_xM, .desc = T), 
            y = m_over_xM,
@@ -365,7 +365,7 @@ ggplot(tail(xM_tbl, 20),
   ylab("m/'s over expected") +
   theme(axis.text.x = element_text(angle = 75, hjust = 1, size = 12)) +
   ggtitle("Album Threads with LEAST m/'s over Expected") +
-  ggsave('./m_slash/ms_over_expected_least.jpg', height = 8, width = 12)
+  ggsave('./statnik12_m_slash/ms_over_expected_least.jpg', height = 8, width = 12)
 
 # contest winner
 
